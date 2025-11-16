@@ -1,0 +1,46 @@
+/* 1. Body Styling (Light Blue Background & Positioning) */
+body {
+    background-color: #ADD8E6; /* Light Blue */
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding-top: 50px; /* Space from the top of the viewport */
+    text-align: center; /* Center the links and header container below */
+}
+
+/* 2. Header Container (Darker Blue Rounded Rectangle) */
+.header-container {
+    /* Center the container horizontally */
+    width: fit-content;
+    margin: 0 auto;
+    
+    /* Style the "squircle" rectangle */
+    background-color: #4682B4; /* Darker Blue */
+    padding: 15px 30px; 
+    border-radius: 20px; /* Rounded corners */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); 
+}
+
+/* 3. Heading Text */
+h1 {
+    color: white; /* White text for contrast */
+    margin: 0;
+}
+
+/* 4. Links Container Styling */
+.links-container {
+    margin-top: 30px;
+}
+
+/* 5. Link Styling */
+.links-container a {
+    /* To ensure <br> doesn't affect vertical spacing, we style the links directly */
+    color: #191970; /* Darker blue for links */
+    text-decoration: none; 
+    margin: 5px 0;
+    font-size: 1.1em;
+    display: block; /* Make links behave like blocks for consistent spacing */
+}
+
+.links-container a:hover {
+    text-decoration: underline;
+}
