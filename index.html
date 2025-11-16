@@ -5,15 +5,74 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Cool Games</title>
   <link rel="icon" href="dbrp.jpeg" type="image/jpeg">
-  <link rel="stylesheet" href="styles.css"> 
+  <style>
+    /* 1. Base Body Styling */
+    body {
+      background-color: #ADD8E6; /* Light Blue */
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding-top: 50px;
+      text-align: center;
+    }
+
+    /* 2. Header Container (Darker Blue Rounded Rectangle) */
+    .header-container {
+      width: fit-content;
+      margin: 0 auto;
+      background-color: #4682B4; /* Darker Blue */
+      padding: 15px 30px; 
+      border-radius: 20px; 
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); 
+    }
+
+    /* 3. Heading Text */
+    h1 {
+      color: white; 
+      margin: 0;
+    }
+
+    /* 4. Links Container Styling */
+    .links-container {
+      margin-top: 30px;
+    }
+
+    /* 5. Link Styling */
+    .links-container a {
+      color: #191970; 
+      text-decoration: none; 
+      margin: 5px 0;
+      font-size: 1.1em;
+      display: block; 
+    }
+
+    .links-container a:hover {
+      text-decoration: underline;
+    }
+
+    /* 6. THE BLANK WHITE OVERLAY */
+    #overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: white;
+      z-index: 10000; /* Ensure it is on top of everything */
+      transition: opacity 0.5s ease-out; /* Smooth transition when disappearing */
+    }
+  </style>
 </head>
 <body>
   
+  <!-- THE BLANK WHITE OVERLAY (No content inside) -->
+  <div id="overlay"></div>
+
   <div class="header-container">
     <h1>Cool Games</h1>
   </div>
   
   <div class="links-container">
+    <!-- really cool -->
     <a href="https://readingplusunblocked.github.io/sm64">Super Mario 64</a>
     <br>
     <a href="https://readingplusunblocked.github.io/solitaire">Spider Solitaire</a>
@@ -39,5 +98,52 @@
     <a href="https://readingplusunblocked.github.io/idft3d">Idle Dino Farm Tycoon 3D</a>
     <br>
   </div>
+
+  <script>
+    // The required key sequence: L-O-L-P-5
+    const SECRET_CODE = ['L', 'O', 'L', 'P', '5'];
+    let inputSequence = [];
+    const overlay = document.getElementById('overlay');
+
+    const handleKeyDown = (event) => {
+      // Get the key and convert to uppercase for case-insensitivity
+      const key = event.key.toUpperCase();
+      
+      // 1. Check if the key matches the next key in the sequence
+      const expectedKey = SECRET_CODE[inputSequence.length];
+
+      if (key === expectedKey) {
+        // Correct key pressed: add it to the input sequence
+        inputSequence.push(key);
+      } else {
+        // Wrong key pressed: reset the sequence
+        inputSequence = [];
+        // Optional: Check if the key pressed matches the very first key of the code
+        if (key === SECRET_CODE[0]) {
+            inputSequence.push(key);
+        }
+      }
+
+      // 2. Check if the full code has been entered
+      if (inputSequence.length === SECRET_CODE.length) {
+        revealContent();
+      }
+    };
+
+    const revealContent = () => {
+      // Hide the overlay using CSS opacity and pointer-events
+      overlay.style.opacity = '0';
+      // Remove it completely after the transition finishes (0.5s)
+      setTimeout(() => {
+        overlay.style.display = 'none';
+        // Stop listening for keys once the code is entered
+        document.removeEventListener('keydown', handleKeyDown);
+      }, 500); 
+    };
+
+    // Start listening for key presses when the page loads
+    document.addEventListener('keydown', handleKeyDown);
+  </script>
 </body>
 </html>
+
