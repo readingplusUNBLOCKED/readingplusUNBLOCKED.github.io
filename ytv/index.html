@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Player</title>
+  <style>
+    body, iframe { margin: 0; padding: 0; width: 100vw; height: 100vh; border: none; background: #000; }
+  </style>
+</head>
+<body>
+  <iframe id="player" src="" allowfullscreen></iframe>
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const v = params.get('v');
+    if (v) {
+      // Constructs the direct embed link and encodes it to Base64
+      const targetEmbed = "https://www.youtube.com/embed/" + v;
+      const base64Embed = btoa(targetEmbed);
+      
+      // Embeds the proxy frame with encoded embed payload and bypass param
+      document.getElementById('player').src = `https://108.181.32.49/?__cpo=${base64Embed}&zz=readingplus`;
+    }
+  </script>
+</body>
+</html>
