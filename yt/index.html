@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Results</title>
+</head>
+<body>
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const q = params.get('q');
+    if (q) {
+      window.location.href = `https://www.croxyproxy.com/_prox/https/www.youtube.com/results?search_query=${q}&zz=readingplus`;
+    }
+  </script>
+</body>
+</html>
