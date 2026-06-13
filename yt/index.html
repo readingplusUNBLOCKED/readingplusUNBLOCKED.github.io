@@ -3,13 +3,22 @@
 <head>
   <meta charset="UTF-8">
   <title>Results</title>
+  <style>
+    body, iframe { margin: 0; padding: 0; width: 100vw; height: 100vh; border: none; }
+  </style>
 </head>
 <body>
+  <iframe id="searchFrame" src="" allowfullscreen></iframe>
   <script>
     const params = new URLSearchParams(window.location.search);
     const q = params.get('q');
     if (q) {
-      window.location.href = `https://www.croxyproxy.com/_prox/https/www.youtube.com/results?search_query=${q}&zz=readingplus`;
+      // Constructs the YouTube search URL and encodes it to Base64
+      const targetUrl = "https://www.youtube.com/results?search_query=" + q;
+      const base64Url = btoa(targetUrl);
+      
+      // Embeds the proxy frame with encoded payload and bypass param
+      document.getElementById('searchFrame').src = `https://108.181.32.49/?__cpo=${base64Url}&zz=readingplus`;
     }
   </script>
 </body>
