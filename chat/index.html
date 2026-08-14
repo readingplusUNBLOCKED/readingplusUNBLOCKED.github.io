@@ -32,7 +32,7 @@
   .chat-messages {
     flex: 1;
     padding: 12px;
-    padding-bottom: 80px;
+    padding-bottom: 145px;
     display: flex;
     flex-direction: column;
     gap: 8px;
@@ -49,14 +49,24 @@
     background: #5c2e2e;
     color: #ffb3b3;
   }
-  .chat-input {
-    display: flex;
-    border-top: 1px solid #3a3a55;
+  .bottom-bar {
     position: fixed;
     bottom: 0;
     left: 0;
     width: 100%;
     background: #2a2a3d;
+    box-sizing: border-box;
+  }
+  .typing-indicator {
+    padding: 4px 12px;
+    font-size: 12px;
+    color: #9a9ab5;
+    min-height: 16px;
+    font-style: italic;
+  }
+  .chat-input {
+    display: flex;
+    border-top: 1px solid #3a3a55;
     box-sizing: border-box;
   }
   .chat-input input {
@@ -189,11 +199,15 @@
 <div class="chat-box hidden" id="chatBox">
   <div class="chat-header">💬 Chat</div>
   <div class="chat-messages" id="messages"></div>
-  <div class="chat-input">
-    <button class="attach-btn" id="attachBtn" title="Attach a file">+</button>
-    <input type="file" id="fileInput" class="hidden" accept="image/*,video/*,audio/*,.pdf,.txt,.zip,.doc,.docx">
-    <input type="text" id="msgInput" placeholder="Type a message..." maxlength="200">
-    <button id="sendBtn">Send</button>
+  <div id="scrollAnchor"></div>
+  <div class="bottom-bar">
+    <div class="typing-indicator" id="typingIndicator"></div>
+    <div class="chat-input">
+      <button class="attach-btn" id="attachBtn" title="Attach a file">+</button>
+      <input type="file" id="fileInput" class="hidden" accept="image/*,video/*,audio/*,.pdf,.txt,.zip,.doc,.docx">
+      <input type="text" id="msgInput" placeholder="Type a message..." maxlength="200">
+      <button id="sendBtn">Send</button>
+    </div>
   </div>
 </div>
 
@@ -244,12 +258,16 @@
     ws = new WebSocket('wss://chatworker.poopoo739738494.workers.dev');
 
     ws.addEventListener('open', () => {
-      addSystemMessage('Connected to chat, previous messages arent shown.');
+      addSystemMessage('Connected to chat.');
     });
 
     ws.addEventListener('message', (event) => {
-      const { name, message, attachment } = JSON.parse(event.data);
-      addMessage(name, message, attachment);
+      const data = JSON.parse(event.data);
+      if (data.typing !== undefined) {
+        handleTypingEvent(data);
+        return;
+      }
+      addMessage(data.name, data.message, data.attachment);
     });
 
     ws.addEventListener('close', () => {
@@ -261,12 +279,76 @@
     });
   }
 
+  function scrollToBottom() {
+    document.getElementById('scrollAnchor').scrollIntoView({ block: 'end' });
+  }
+
+  // --- Typing indicator ---
+  const typingIndicatorEl = document.getElementById('typingIndicator');
+  const typingUsers = new Map(); // name -> timeout id (auto-clears if no update)
+
+  function handleTypingEvent(data) {
+    if (data.name === username) return; // never show yourself
+    if (typingUsers.has(data.name)) {
+      clearTimeout(typingUsers.get(data.name));
+    }
+    if (data.typing) {
+      const timeoutId = setTimeout(() => {
+        typingUsers.delete(data.name);
+        renderTypingIndicator();
+      }, 4000); // auto-clear if no follow-up event arrives
+      typingUsers.set(data.name, timeoutId);
+    } else {
+      typingUsers.delete(data.name);
+    }
+    renderTypingIndicator();
+  }
+
+  function renderTypingIndicator() {
+    const names = [...typingUsers.keys()];
+    if (names.length === 0) {
+      typingIndicatorEl.textContent = '';
+    } else if (names.length === 1) {
+      typingIndicatorEl.textContent = `${names[0]} is typing...`;
+    } else if (names.length === 2) {
+      typingIndicatorEl.textContent = `${names[0]}, ${names[1]} are typing...`;
+    } else {
+      typingIndicatorEl.textContent = `${names.slice(0, 2).join(', ')}, and ${names.length - 2} others are typing...`;
+    }
+  }
+
+  let isTyping = false;
+  let typingStopTimer = null;
+
+  function sendTyping(typing) {
+    if (!ws || ws.readyState !== WebSocket.OPEN) return;
+    ws.send(JSON.stringify({ name: username, typing }));
+  }
+
+  inputEl.addEventListener('input', () => {
+    if (inputEl.value.trim()) {
+      if (!isTyping) {
+        isTyping = true;
+        sendTyping(true);
+      }
+      clearTimeout(typingStopTimer);
+      typingStopTimer = setTimeout(() => {
+        isTyping = false;
+        sendTyping(false);
+      }, 2000);
+    } else if (isTyping) {
+      isTyping = false;
+      clearTimeout(typingStopTimer);
+      sendTyping(false);
+    }
+  });
+
   function addSystemMessage(text) {
     const div = document.createElement('div');
     div.className = 'msg blocked';
     div.textContent = text;
     messagesEl.appendChild(div);
-    window.scrollTo(0, document.body.scrollHeight);
+    scrollToBottom();
   }
 
   function attachmentKind(mimeType) {
@@ -300,7 +382,7 @@
     }
 
     messagesEl.appendChild(div);
-    window.scrollTo(0, document.body.scrollHeight);
+    scrollToBottom();
   }
 
   function buildAttachmentEl(attachment) {
@@ -352,6 +434,11 @@
   function sendMessage() {
     const text = inputEl.value.trim();
     if (!text || !ws || ws.readyState !== WebSocket.OPEN) return;
+    if (isTyping) {
+      isTyping = false;
+      clearTimeout(typingStopTimer);
+      sendTyping(false);
+    }
     ws.send(JSON.stringify({ name: username, message: text }));
     inputEl.value = '';
   }
@@ -374,7 +461,7 @@
     }
 
     if (!ws || ws.readyState !== WebSocket.OPEN) {
-      addSystemMessage('Not connected - cannot send file.');
+      addSystemMessage('Not connected — cannot send file.');
       return;
     }
 
@@ -391,6 +478,14 @@
     };
     reader.onerror = () => {
       addSystemMessage(`Could not read "${file.name}".`);
+    };
+    reader.readAsDataURL(file);
+  });
+</script>
+
+</body>
+</html>
+ddSystemMessage(`Could not read "${file.name}".`);
     };
     reader.readAsDataURL(file);
   });
