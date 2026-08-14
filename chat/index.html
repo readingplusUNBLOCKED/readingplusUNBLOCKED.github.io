@@ -275,11 +275,21 @@
     if (e.key === 'Enter') enterChat();
   });
 
+  let reconnectAttempts = 0;
+  const MAX_RECONNECT_ATTEMPTS = 3;
+  const RECONNECT_DELAY_MS = 3000;
+  let intentionalClose = false;
+
   function connectWebSocket() {
     ws = new WebSocket('wss://chatworker.poopoo739738494.workers.dev');
 
     ws.addEventListener('open', () => {
-      addSystemMessage('Connected to chat.');
+      if (reconnectAttempts > 0) {
+        addSystemMessage('Reconnected.');
+      } else {
+        addSystemMessage('Connected to chat.');
+      }
+      reconnectAttempts = 0;
     });
 
     ws.addEventListener('message', (event) => {
@@ -292,12 +302,27 @@
     });
 
     ws.addEventListener('close', () => {
-      addSystemMessage('Disconnected from chat.');
+      if (intentionalClose) return;
+      setTimeout(() => {
+        attemptReconnect();
+      }, RECONNECT_DELAY_MS)
     });
 
     ws.addEventListener('error', () => {
       addSystemMessage('Connection error.');
     });
+  }
+
+  function attemptReconnect() {
+    if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
+      addSystemMessage('Failed to reconnect, please refresh.');
+      return;
+    }
+    reconnectAttempts++;
+    addSystemMessage('Reconnecting (${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})...`);
+    setTimeout(() => {
+      connectWebSocket();
+    }, RECONNECT_DELAY_MS);
   }
 
   function scrollToBottom() {
