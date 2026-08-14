@@ -244,7 +244,7 @@
     ws = new WebSocket('wss://chatworker.poopoo739738494.workers.dev');
 
     ws.addEventListener('open', () => {
-      addSystemMessage('Connected to chat.');
+      addSystemMessage('Connected to chat, previous messages arent shown.');
     });
 
     ws.addEventListener('message', (event) => {
