@@ -303,7 +303,7 @@
 
     ws.addEventListener('close', () => {
       if (intentionalClose) return;
-      addSystemMessage('Disconnected, attempting to reconnect..."
+      addSystemMessage('Disconnected, attempting to reconnect...')
       attemptReconnect();
     });
 
