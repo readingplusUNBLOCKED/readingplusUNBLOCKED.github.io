@@ -1,0 +1,21 @@
+<div class="view-head">
+  <p class="eyebrow">Utilities</p>
+  <h1>URL Tools</h1>
+  <p class="sub">Paste any link and open it in a new tab.</p>
+</div>
+<div class="panel">
+  <div class="field-row">
+    <input type="text" id="urlInput" placeholder="Enter URL here">
+    <button class="btn" onclick="goURL()">GOTO</button>
+  </div>
+</div>
+
+<script>
+  function goURL(){
+    let url = document.getElementById('urlInput').value.trim();
+    if (!url) return;
+    if (!url.startsWith('http')) url = 'https://' + url;
+    const finalUrl = url + (url.includes('?') ? '&' : '?') + 'zz=readingplus';
+    window.open(finalUrl, '_blank');
+  }
+</script>
