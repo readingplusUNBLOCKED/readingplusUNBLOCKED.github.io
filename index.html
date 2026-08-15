@@ -1,61 +1,280 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>ReadingPlus</title>
-  <style>
-    body { background-color: #ADD8E6; font-family: Arial, sans-serif; margin: 0; padding-top: 50px; text-align: center; display: flex; flex-direction: column; min-height: 100vh; padding-bottom: 120px; }
-    .header-container { width: fit-content; margin: 0 auto; background-color: #4682B4; padding: 15px 30px; border-radius: 20px; color: white; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); }
-    .links-container { margin-top: 30px; flex-grow: 1; }
-    .links-container a { color: #191970; text-decoration: none; margin: 5px 0; font-size: 1.1em; display: block; }
-    .links-container a:hover { text-decoration: underline; }
-    .footer-container { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 90%; max-width: 600px; }
-    .input-group { display: flex; gap: 5px; }
-    input { flex-grow: 1; padding: 8px; border-radius: 10px; border: none; }
-    button { padding: 8px 15px; border-radius: 10px; border: none; cursor: pointer; background: #ADD8E6; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ReadingPlus</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Manrope:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg-base:#0A0C10;
+    --bg-panel:#14181F;
+    --bg-panel-hi:#1B2029;
+    --border:#232833;
+    --text-primary:#E8ECF1;
+    --text-muted:#7A8394;
+    --accent:#FF3D6E;
+    --accent-2:#35E3C8;
+    --accent-dim:#3A1622;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0;
+    min-height:100vh;
+    background:
+      radial-gradient(ellipse 900px 500px at 50% -10%, rgba(255,61,110,0.12), transparent 60%),
+      radial-gradient(ellipse 700px 500px at 100% 20%, rgba(53,227,200,0.07), transparent 60%),
+      var(--bg-base);
+    color:var(--text-primary);
+    font-family:'Manrope',sans-serif;
+    display:flex;
+    flex-direction:column;
+  }
+  ::selection{background:var(--accent);color:#0A0C10;}
+
+  /* Grain overlay for texture */
+  body::before{
+    content:"";
+    position:fixed; inset:0; pointer-events:none; z-index:0; opacity:0.035; mix-blend-mode:overlay;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  header.topbar{
+    position:sticky; top:0; z-index:10;
+    background:rgba(10,12,16,0.85);
+    backdrop-filter:blur(10px);
+    border-bottom:1px solid var(--border);
+  }
+  .topbar-inner{
+    max-width:920px; margin:0 auto; padding:16px 20px;
+    display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap;
+  }
+  .brand{
+    font-family:'Chakra Petch',sans-serif; font-weight:700; font-size:1.15rem;
+    letter-spacing:0.02em; display:flex; align-items:center; gap:8px;
+  }
+  .brand .dot{width:9px;height:9px;border-radius:2px;background:var(--accent);box-shadow:0 0 10px var(--accent);transform:rotate(45deg);}
+  nav.tabs{display:flex; gap:4px; background:var(--bg-panel); border:1px solid var(--border); border-radius:10px; padding:4px;}
+  nav.tabs button, nav.tabs a{
+    font-family:'Chakra Petch',sans-serif; font-weight:600; font-size:0.85rem;
+    background:transparent; border:none; color:var(--text-muted); cursor:pointer;
+    padding:8px 14px; border-radius:7px; letter-spacing:0.03em; transition:color .15s, background .15s;
+    text-decoration:none; display:inline-block;
+  }
+  nav.tabs button.active{color:#0A0C10; background:var(--accent);}
+  nav.tabs button:not(.active):hover, nav.tabs a:hover{color:var(--text-primary); background:var(--bg-panel-hi);}
+
+  main{max-width:920px; margin:0 auto; width:100%; padding:32px 20px 80px; flex:1; position:relative; z-index:1;}
+  .view{display:none;}
+  .view.active{display:block; animation:fadein .25s ease;}
+  @keyframes fadein{from{opacity:0; transform:translateY(4px);} to{opacity:1; transform:translateY(0);}}
+
+  .view-head{margin-bottom:20px;}
+  .eyebrow{
+    font-family:'JetBrains Mono',monospace; font-size:0.72rem; color:var(--accent-2);
+    letter-spacing:0.12em; text-transform:uppercase; margin:0 0 6px;
+  }
+  h1{font-family:'Chakra Petch',sans-serif; font-size:1.7rem; margin:0 0 4px; letter-spacing:-0.01em;}
+  .sub{color:var(--text-muted); font-size:0.92rem; margin:0;}
+
+  /* Search */
+  .search-wrap{margin:20px 0 24px; position:relative;}
+  .search-wrap input{
+    width:100%; background:var(--bg-panel); border:1px solid var(--border); color:var(--text-primary);
+    font-family:'Manrope',sans-serif; font-size:0.95rem; padding:12px 14px 12px 40px; border-radius:10px;
+    outline:none; transition:border-color .15s;
+  }
+  .search-wrap input:focus{border-color:var(--accent);}
+  .search-wrap svg{position:absolute; left:13px; top:50%; transform:translateY(-50%); opacity:0.5;}
+
+  /* Game grid — cartridge cards */
+  .grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); gap:14px;}
+  .cart{
+    position:relative; display:block; text-decoration:none; color:inherit;
+    background:linear-gradient(155deg, var(--bg-panel-hi), var(--bg-panel));
+    border:1px solid var(--border); border-radius:12px; padding:12px;
+    transition:transform .18s ease, border-color .18s ease, box-shadow .18s ease;
+  }
+  .cart:hover{transform:translateY(-3px) rotate(-0.6deg); border-color:var(--accent); box-shadow:0 10px 24px -8px rgba(255,61,110,0.35);}
+  .cart .tab{
+    position:absolute; top:-6px; left:14px; width:26px; height:10px; border-radius:3px 3px 0 0;
+    background:var(--accent); opacity:0.85;
+  }
+  .cart .thumb{
+    width:100%; aspect-ratio:1/1; border-radius:8px; background:var(--bg-base);
+    display:flex; align-items:center; justify-content:center; overflow:hidden; margin-bottom:10px;
+    border:1px solid var(--border); position:relative;
+  }
+  .cart .thumb img{width:100%; height:100%; object-fit:cover; display:block;}
+  .cart .thumb .fallback{
+    font-family:'Chakra Petch',sans-serif; font-weight:700; font-size:1.3rem; color:var(--accent-2); opacity:0.6;
+  }
+  .cart .name{font-size:0.85rem; font-weight:600; line-height:1.25;}
+  .cart .code{
+    font-family:'JetBrains Mono',monospace; font-size:0.68rem; color:var(--text-muted);
+    margin-top:3px; letter-spacing:0.02em;
+  }
+  .no-results{color:var(--text-muted); font-size:0.9rem; padding:30px 0; text-align:center;}
+
+  /* URL tools */
+  .panel{background:var(--bg-panel); border:1px solid var(--border); border-radius:14px; padding:22px;}
+  .field-row{display:flex; gap:8px; margin-top:14px;}
+  .field-row input{
+    flex:1; background:var(--bg-base); border:1px solid var(--border); color:var(--text-primary);
+    padding:12px 14px; border-radius:9px; font-family:'Manrope',sans-serif; font-size:0.95rem; outline:none;
+  }
+  .field-row input:focus{border-color:var(--accent);}
+  .btn{
+    font-family:'Chakra Petch',sans-serif; font-weight:600; letter-spacing:0.02em;
+    background:var(--accent); color:#0A0C10; border:none; padding:12px 18px; border-radius:9px;
+    cursor:pointer; transition:filter .15s;
+  }
+  .btn:hover{filter:brightness(1.1);}
+  .hint{color:var(--text-muted); font-size:0.82rem; margin-top:12px; font-family:'JetBrains Mono',monospace;}
+
+  @media (max-width:600px){
+    .topbar-inner{padding:14px 16px;}
+    main{padding:24px 16px 70px;}
+    nav.tabs button{padding:7px 10px; font-size:0.78rem;}
+    .grid{grid-template-columns:repeat(auto-fill,minmax(120px,1fr)); gap:10px;}
+  }
+
+  :focus-visible{outline:2px solid var(--accent-2); outline-offset:2px;}
+  @media (prefers-reduced-motion:reduce){
+    *{animation:none !important; transition:none !important;}
+  }
+</style>
 </head>
 <body>
-  <div class="header-container"><h1>Cool Games</h1></div>
-  
-  <div class="links-container">
-    <a href="https://readingplusunblocked.github.io/sm64">Super Mario 64</a>
-    <a href="https://readingplusunblocked.github.io/solitaire">Spider Solitaire</a>
-    <a href="https://readingplusunblocked.github.io/smp">Stickman Parkour</a>
-    <a href="https://readingplusunblocked.github.io/ffr">Fast Food Rush</a>
-    <a href="https://readingplusunblocked.github.io/sfb">Stack Fire Ball</a>
-    <a href="https://readingplusunblocked.github.io/nab">Nuts and Bolts</a>
-    <a href="https://readingplusunblocked.github.io/bb">Block Blast</a>
-    <a href="https://readingplusunblocked.github.io/bh">Basket Hoop</a>
-    <a href="https://readingplusunblocked.github.io/tl">Troll Level</a>
-    <a href="https://readingplusunblocked.github.io/whg">World's Hardest Game</a>
-    <a href="https://readingplusunblocked.github.io/ld">Level Devil</a>
-    <a href="https://readingplusunblocked.github.io/idft3d">Idle Dino Farm Tycoon 3D</a>
-  </div>
 
-  <div class="footer-container">
-    <div class="input-group">
-      <input type="text" id="urlInput" placeholder="Enter URL here" />
-      <button onclick="goURL()">GOTO</button>
-    </div>
-    <div class="input-group">
-      <input type="text" id="ytInput" placeholder="YouTube Search" />
-      <button onclick="">under construction!</button>
-    </div>
+<header class="topbar">
+  <div class="topbar-inner">
+    <div class="brand"><span class="dot"></span>Cool Games</div>
+    <nav class="tabs">
+      <button class="tab-btn active" data-view="games">Games</button>
+      <button class="tab-btn" data-view="tools">URL Tools</button>
+      <a class="tab-btn" href="/chat/">Chat Room</a>
+    </nav>
   </div>
+</header>
 
-  <script>
-    function goURL() {
-      let url = document.getElementById('urlInput').value.trim();
-      if (!url) return;
-      if (!url.startsWith('http')) url = 'https://' + url;
-      const finalUrl = url + (url.includes('?') ? '&' : '?') + 'zz=readingplus';
-      window.open(finalUrl, '_blank');
-    }
-    function goYT() {
-      let q = document.getElementById('ytInput').value.trim();
-      if (q) window.location.href = '/yt?q=' + encodeURIComponent(q);
-    }
-  </script>
+<main>
+
+  <!-- GAMES -->
+  <section id="view-games" class="view active">
+    <div class="view-head">
+      <p class="eyebrow">Library</p>
+      <h1 id="game-count-heading">13 games</h1>
+      <p class="sub">Free periods only. You know the drill.</p>
+    </div>
+
+    <div class="search-wrap">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7A8394" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input type="text" id="gameSearch" placeholder="Search games…" autocomplete="off">
+    </div>
+
+    <div class="grid" id="gameGrid"></div>
+    <p class="no-results" id="noResults" style="display:none;">No games match that search.</p>
+  </section>
+
+  <!-- URL TOOLS -->
+  <section id="view-tools" class="view">
+    <div class="view-head">
+      <p class="eyebrow">Utilities</p>
+      <h1>URL Tools</h1>
+      <p class="sub">Paste any link and open it in a new tab.</p>
+    </div>
+    <div class="panel">
+      <div class="field-row">
+        <input type="text" id="urlInput" placeholder="Enter URL here">
+        <button class="btn" onclick="goURL()">GOTO</button>
+      </div>
+      <p class="hint">opens in a new tab — no history left behind on this one</p>
+    </div>
+  </section>
+
+
+</main>
+
+<script>
+  // ---------- GAMES ----------
+  // Assumes an icon file per game at /assets/icons/<code>.png — swap the extension below if yours differ.
+  const games = [
+    { code:'sm64',   name:'Super Mario 64' },
+    { code:'solitaire', name:'Spider Solitaire' },
+    { code:'smp',    name:'Stickman Parkour' },
+    { code:'ffr',    name:'Fast Food Rush' },
+    { code:'sfb',    name:'Stack Fire Ball' },
+    { code:'nab',    name:'Nuts and Bolts' },
+    { code:'bb',     name:'Block Blast' },
+    { code:'bh',     name:'Basket Hoop' },
+    { code:'tl',     name:'Troll Level' },
+    { code:'whg',    name:"World's Hardest Game" },
+    { code:'ld',     name:'Level Devil' },
+    { code:'idft3d', name:'Idle Dino Farm Tycoon 3D' },
+    { code:'fnaf',   name:'FNAF' },
+  ];
+
+  const gameGrid = document.getElementById('gameGrid');
+  const noResults = document.getElementById('noResults');
+  document.getElementById('game-count-heading').textContent = games.length + ' games';
+
+  function initials(name){
+    return name.split(' ').slice(0,2).map(w=>w[0]).join('').toUpperCase();
+  }
+
+  function renderGames(list){
+    gameGrid.innerHTML = '';
+    list.forEach(g=>{
+      const a = document.createElement('a');
+      a.className = 'cart';
+      a.href = `/g/${g.code}/`;
+      a.innerHTML = `
+        <span class="tab"></span>
+        <div class="thumb">
+          <img src="/assets/icons/${g.code}.png" alt="" loading="lazy"
+               onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+          <span class="fallback" style="display:none;">${initials(g.name)}</span>
+        </div>
+        <div class="name">${g.name}</div>
+        <div class="code">/g/${g.code}</div>
+      `;
+      gameGrid.appendChild(a);
+    });
+    noResults.style.display = list.length ? 'none' : 'block';
+  }
+  renderGames(games);
+
+  document.getElementById('gameSearch').addEventListener('input', e=>{
+    const q = e.target.value.trim().toLowerCase();
+    renderGames(games.filter(g => g.name.toLowerCase().includes(q) || g.code.includes(q)));
+  });
+
+  // ---------- TABS ----------
+  // Only Games/URL Tools switch in-page; Chat Room is a real link to /chat/
+  const tabBtns = document.querySelectorAll('.tab-btn[data-view]');
+  const views = { games: document.getElementById('view-games'), tools: document.getElementById('view-tools') };
+  tabBtns.forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      tabBtns.forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      Object.values(views).forEach(v=>v.classList.remove('active'));
+      views[btn.dataset.view].classList.add('active');
+    });
+  });
+
+  // ---------- URL TOOLS ----------
+  function goURL(){
+    let url = document.getElementById('urlInput').value.trim();
+    if (!url) return;
+    if (!url.startsWith('http')) url = 'https://' + url;
+    const finalUrl = url + (url.includes('?') ? '&' : '?') + 'zz=readingplus';
+    window.open(finalUrl, '_blank');
+  }
+</script>
+
 </body>
 </html>
