@@ -223,7 +223,31 @@
   .msg img.attachment, .msg video.attachment{
     max-width:100%; width:100%; max-height:320px; object-fit:contain; border-radius:8px; display:block;
   }
-  .msg audio.attachment{width:100%;}
+  .audio-attachment{
+    display:flex; flex-direction:column; gap:8px;
+    background:var(--bg-base); border:1px solid var(--border); border-radius:8px; padding:10px 12px;
+  }
+  .audio-attachment .audio-name{
+    font-size:0.78rem; font-family:'JetBrains Mono',monospace; color:var(--text-muted);
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  }
+  .audio-controls{display:flex; align-items:center; gap:10px;}
+  .audio-play-btn{
+    width:32px; height:32px; flex-shrink:0; border-radius:50%; border:none;
+    background:var(--accent); color:#0A0C10; cursor:pointer; display:flex; align-items:center; justify-content:center;
+    font-size:13px; padding:0;
+  }
+  .audio-play-btn:hover{filter:brightness(1.1);}
+  .audio-progress-wrap{flex:1; display:flex; align-items:center; height:20px; cursor:pointer; touch-action:none;}
+  .audio-progress-track{position:relative; width:100%; height:5px; background:var(--border); border-radius:3px;}
+  .audio-progress-fill{position:absolute; top:0; left:0; height:100%; background:var(--accent-2); border-radius:3px; width:0%;}
+  .audio-progress-handle{
+    position:absolute; top:50%; width:12px; height:12px; border-radius:50%; background:var(--accent-2);
+    transform:translate(-50%,-50%); left:0%; box-shadow:0 0 0 3px rgba(53,227,200,0.2);
+  }
+  .audio-time{
+    font-family:'JetBrains Mono',monospace; font-size:0.72rem; color:var(--text-muted); flex-shrink:0; min-width:72px; text-align:right;
+  }
   .file-attachment{
     display:flex; align-items:center; gap:10px; background:var(--bg-base);
     border:1px solid var(--border); padding:8px 10px; border-radius:8px;
