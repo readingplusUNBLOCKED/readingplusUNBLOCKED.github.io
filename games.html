@@ -1,0 +1,61 @@
+<div class="view-head">
+  <p class="eyebrow">Library</p>
+  <h1 id="game-count-heading">13 games</h1>
+</div>
+
+<div class="search-wrap">
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7A8394" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+  <input type="text" id="gameSearch" placeholder="Search games…" autocomplete="off">
+</div>
+
+<div class="grid" id="gameGrid"></div>
+<p class="no-results" id="noResults" style="display:none;">No games match that search.</p>
+
+<script>
+  const games = [
+    { code:'sm64',   name:'Super Mario 64' },
+    { code:'solitaire', name:'Solitaire' },
+    { code:'sfb',    name:'Stack Fire Ball' },
+    { code:'nab',    name:'Nuts and Bolts' },
+    { code:'bb',     name:'Block Blast' },
+    { code:'bh',     name:'Basket Hoop' },
+    { code:'whg',    name:"World's Hardest Game" },
+    { code:'ld',     name:'Level Devil' },
+    { code:'fnaf',   name:'FNAF' },
+  ];
+
+  const gameGrid = document.getElementById('gameGrid');
+  const noResults = document.getElementById('noResults');
+  document.getElementById('game-count-heading').textContent = games.length + ' games';
+
+  function initials(name){
+    return name.split(' ').slice(0,2).map(w=>w[0]).join('').toUpperCase();
+  }
+
+  function renderGames(list){
+    gameGrid.innerHTML = '';
+    list.forEach(g=>{
+      const a = document.createElement('a');
+      a.className = 'cart';
+      a.href = `/g/${g.code}/`;
+      a.innerHTML = `
+        <span class="tab"></span>
+        <div class="thumb">
+          <img src="/assets/games/${g.code}.png" alt="" loading="lazy"
+               onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+          <span class="fallback" style="display:none;">${initials(g.name)}</span>
+        </div>
+        <div class="name">${g.name}</div>
+        <div class="code">/g/${g.code}</div>
+      `;
+      gameGrid.appendChild(a);
+    });
+    noResults.style.display = list.length ? 'none' : 'block';
+  }
+  renderGames(games);
+
+  document.getElementById('gameSearch').addEventListener('input', e=>{
+    const q = e.target.value.trim().toLowerCase();
+    renderGames(games.filter(g => g.name.toLowerCase().includes(q) || g.code.includes(q)));
+  });
+</script>
