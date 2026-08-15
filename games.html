@@ -1,6 +1,6 @@
 <div class="view-head">
   <p class="eyebrow">Library</p>
-  <h1 id="game-count-heading">13 games</h1>
+  <h1 id="game-count-heading">Loading...</h1>
 </div>
 
 <div class="search-wrap">
@@ -22,6 +22,11 @@
     { code:'whg',    name:"World's Hardest Game" },
     { code:'ld',     name:'Level Devil' },
     { code:'fnaf',   name:'FNAF' },
+    { code:'pi',     name:'Plague Inc.' },
+    { code:'u',      name:'Uno' },
+    { code:'faw',    name:'Fireboy and Watergirl' },
+    { code:'pvz',    name:'Plants vs Zombies' },
+    { code:'smb',    name:'Super Mario Bros' },
   ];
 
   const gameGrid = document.getElementById('gameGrid');
@@ -58,4 +63,5 @@
     const q = e.target.value.trim().toLowerCase();
     renderGames(games.filter(g => g.name.toLowerCase().includes(q) || g.code.includes(q)));
   });
-</script>
+      </script>
+      
