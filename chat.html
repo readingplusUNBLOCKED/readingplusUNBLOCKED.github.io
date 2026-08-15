@@ -32,7 +32,8 @@
   .react-add-btn:hover{border-color:var(--accent); color:var(--accent);}
   .emoji-picker{
     position:fixed; z-index:100; background:var(--bg-panel-hi); border:1px solid var(--border);
-    border-radius:10px; padding:6px; display:flex; gap:3px; box-shadow:0 10px 30px rgba(0,0,0,0.45);
+    border-radius:10px; padding:6px; display:flex; flex-wrap:wrap; gap:3px; max-width:220px;
+    box-shadow:0 10px 30px rgba(0,0,0,0.45);
   }
   .emoji-picker button{
     background:transparent; border:none; font-size:18px; cursor:pointer; padding:5px; border-radius:6px;
@@ -98,7 +99,7 @@
   const MAX_FILE_BYTES = 5 * 1024 * 1024; // 5MB, keep WebSocket messages reasonable
 
   // ---------- Reactions ----------
-  const REACTION_EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '🎉', '🔥', '👀'];
+  const REACTION_EMOJIS = ['😀', '😅', '🤣', '😉', '🥰', '😝', '😱', '😡', '😨', '🤮', '😮', '😎'];
   const messageElements = new Map();      // messageId -> { footerEl, reactionsEl }
   const reactionsState = new Map();       // messageId -> Map(emoji -> Set(names))
   let activeEmojiPicker = null;
