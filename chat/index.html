@@ -303,9 +303,8 @@
 
     ws.addEventListener('close', () => {
       if (intentionalClose) return;
-      SetTimeout(() => {
-        attemptReconnect();
-      }, RECONNECT_DELAY_MS)
+      addSystemMessage('Disconnected, attempting to reconnect..."
+      attemptReconnect();
     });
 
     ws.addEventListener('error', () => {
@@ -319,7 +318,7 @@
       return;
     }
     reconnectAttempts++;
-    addSystemMessage(`Disconnected. Reconnecting (${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})...`);
+    addSystemMessage(`(${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})`);
     setTimeout(() => {
       connectWebSocket();
     }, RECONNECT_DELAY_MS);
