@@ -279,7 +279,7 @@
   const MAX_RECONNECT_ATTEMPTS = 3;
   const RECONNECT_DELAY_MS = 3000;
   let repeat = false;
-
+  let firstMessage = false;
   function connectWebSocket() {
     ws = new WebSocket('wss://chatworker.poopoo739738494.workers.dev');
 
@@ -453,7 +453,10 @@
     div.className = 'msg blocked';
     div.textContent = text;
     messagesEl.appendChild(div);
-    scrollToBottom();
+    if (!firstMessage) {
+      scrollToBottom();
+      firstMessage = true;
+    }
   }
 
   function attachmentKind(mimeType) {
