@@ -292,6 +292,102 @@
     scrollToBottom();
   }
 
+  function buildAudioPlayer(dataUrl, filename) {
+    const wrap = document.createElement('div');
+    wrap.className = 'audio-attachment';
+
+    const nameEl = document.createElement('div');
+    nameEl.className = 'audio-name';
+    nameEl.textContent = filename || 'audio';
+    wrap.appendChild(nameEl);
+
+    const controls = document.createElement('div');
+    controls.className = 'audio-controls';
+
+    const playBtn = document.createElement('button');
+    playBtn.className = 'audio-play-btn';
+    playBtn.type = 'button';
+    playBtn.textContent = '▶';
+
+    const progressWrap = document.createElement('div');
+    progressWrap.className = 'audio-progress-wrap';
+    const track = document.createElement('div');
+    track.className = 'audio-progress-track';
+    const fill = document.createElement('div');
+    fill.className = 'audio-progress-fill';
+    const handle = document.createElement('div');
+    handle.className = 'audio-progress-handle';
+    track.appendChild(fill);
+    track.appendChild(handle);
+    progressWrap.appendChild(track);
+
+    const timeEl = document.createElement('span');
+    timeEl.className = 'audio-time';
+    timeEl.textContent = '0:00 / 0:00';
+
+    controls.appendChild(playBtn);
+    controls.appendChild(progressWrap);
+    controls.appendChild(timeEl);
+    wrap.appendChild(controls);
+
+    const audio = new Audio(dataUrl);
+    audio.preload = 'metadata';
+
+    function formatTime(sec) {
+      if (!isFinite(sec) || isNaN(sec)) return '0:00';
+      const m = Math.floor(sec / 60);
+      const s = Math.floor(sec % 60).toString().padStart(2, '0');
+      return `${m}:${s}`;
+    }
+
+    function updateProgress() {
+      const pct = audio.duration ? (audio.currentTime / audio.duration) * 100 : 0;
+      fill.style.width = pct + '%';
+      handle.style.left = pct + '%';
+      timeEl.textContent = `${formatTime(audio.currentTime)} / ${formatTime(audio.duration)}`;
+    }
+
+    audio.addEventListener('loadedmetadata', updateProgress);
+    audio.addEventListener('timeupdate', updateProgress);
+    audio.addEventListener('ended', () => {
+      playBtn.textContent = '▶';
+    });
+
+    playBtn.addEventListener('click', () => {
+      if (audio.paused) {
+        audio.play();
+        playBtn.textContent = '⏸';
+      } else {
+        audio.pause();
+        playBtn.textContent = '▶';
+      }
+    });
+
+    let dragging = false;
+
+    function seekFromEvent(e) {
+      const rect = track.getBoundingClientRect();
+      const ratio = Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width));
+      if (audio.duration) {
+        audio.currentTime = ratio * audio.duration;
+        updateProgress();
+      }
+    }
+
+    progressWrap.addEventListener('pointerdown', (e) => {
+      dragging = true;
+      seekFromEvent(e);
+    });
+    window.addEventListener('pointermove', (e) => {
+      if (dragging) seekFromEvent(e);
+    });
+    window.addEventListener('pointerup', () => {
+      dragging = false;
+    });
+
+    return wrap;
+  }
+
   function buildAttachmentEl(attachment) {
     const { kind, dataUrl, filename } = attachment;
 
@@ -312,11 +408,7 @@
     }
 
     if (kind === 'audio') {
-      const audio = document.createElement('audio');
-      audio.className = 'attachment';
-      audio.src = dataUrl;
-      audio.controls = true;
-      return audio;
+      return buildAudioPlayer(dataUrl, filename);
     }
 
     // generic file
@@ -388,5 +480,4 @@
     };
     reader.readAsDataURL(file);
   });
-  </script>
-  
+</script>
