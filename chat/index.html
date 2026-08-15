@@ -303,7 +303,7 @@
 
     ws.addEventListener('close', () => {
       if (intentionalClose) return;
-      setTimeout(() => {
+      SetTimeout(() => {
         attemptReconnect();
       }, RECONNECT_DELAY_MS)
     });
@@ -319,7 +319,7 @@
       return;
     }
     reconnectAttempts++;
-    addSystemMessage('Reconnecting (${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})...`);
+    addSystemMessage(`Disconnected. Reconnecting (${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})...`);
     setTimeout(() => {
       connectWebSocket();
     }, RECONNECT_DELAY_MS);
@@ -418,12 +418,12 @@
     // Pull out code blocks/inline code first so formatting inside them isn't touched
     const codePlaceholders = [];
     text = text.replace(/```([\s\S]*?)```/g, (match, code) => {
-      const token = `\u0000CB${codePlaceholders.length}\u0000`;
+      const token = `§§CB${codePlaceholders.length}§§`;
       codePlaceholders.push(`<pre class="code-block"><code>${code}</code></pre>`);
       return token;
     });
     text = text.replace(/`([^`\n]+?)`/g, (match, code) => {
-      const token = `\u0000CB${codePlaceholders.length}\u0000`;
+      const token = `§§CB${codePlaceholders.length}§§`;
       codePlaceholders.push(`<code class="inline-code">${code}</code>`);
       return token;
     });
@@ -441,7 +441,7 @@
     });
 
     // Restore code blocks/inline code
-    text = text.replace(/\u0000CB(\d+)\u0000/g, (match, i) => codePlaceholders[Number(i)]);
+    text = text.replace(/§§CB(\d+)§§/g, (match, i) => codePlaceholders[Number(i)]);
 
     return text;
   }
