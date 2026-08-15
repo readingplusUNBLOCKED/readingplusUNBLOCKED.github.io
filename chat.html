@@ -199,6 +199,28 @@
     });
   }
 
+  function loadHistory(historyMessages) {
+    // Full resync: server is the source of truth. Clear local state and
+    // rebuild from what it sends, whether this is an initial join or a
+    // reconnect after a dropped connection.
+    messagesEl.innerHTML = '';
+    messageElements.clear();
+    reactionsState.clear();
+    firstMessage = false;
+
+    historyMessages.forEach(m => {
+      addMessage(m.name, m.message, m.attachment, m.id);
+      if (m.reactions) {
+        const emojiMap = new Map();
+        Object.entries(m.reactions).forEach(([emoji, names]) => {
+          emojiMap.set(emoji, new Set(names));
+        });
+        reactionsState.set(m.id, emojiMap);
+        renderReactions(m.id);
+      }
+    });
+  }
+
   // ---------- Leveling system ----------
   // Level up every LEVEL_INTERVAL messages sent. Tracked per-browser via localStorage.
   const LEVEL_INTERVAL = 12; // one level per ~10-15 messages
@@ -300,6 +322,10 @@
 
     ws.addEventListener('message', (event) => {
       const data = JSON.parse(event.data);
+      if (data.type === 'history') {
+        loadHistory(data.messages || []);
+        return;
+      }
       if (data.type === 'reaction') {
         handleReactionEvent(data);
         return;
