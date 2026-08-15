@@ -1,0 +1,392 @@
+<div class="view-head">
+  <p class="eyebrow">Live</p>
+  <h1>Chat Room</h1>
+  <p class="sub">Talk with everyone currently on the site.</p>
+</div>
+
+<div class="chat-panel">
+  <div class="chat-panel-head"><span class="dot"></span>Chat</div>
+  <div class="chat-messages" id="messages"></div>
+</div>
+
+<div class="bottom-bar hidden" id="bottomBar">
+  <div class="bottom-bar-inner">
+    <div class="typing-indicator" id="typingIndicator"></div>
+    <div class="chat-input">
+      <button class="attach-btn" id="attachBtn" title="Attach a file">+</button>
+      <input type="file" id="fileInput" class="hidden" accept="image/*,video/*,audio/*,.pdf,.txt,.zip,.doc,.docx">
+      <input type="text" id="msgInput" placeholder="Type a message..." maxlength="200">
+      <button id="sendBtn">Send</button>
+    </div>
+  </div>
+</div>
+
+<div class="name-screen" id="nameScreen">
+  <p class="eyebrow">Chat Room</p>
+  <h1>Enter a name to chat</h1>
+  <input type="text" id="nameInput" placeholder="Your name" maxlength="20">
+  <button class="btn" id="nameBtn">Continue</button>
+</div>
+
+<script type="module">
+  import leoProfanity from 'https://cdn.jsdelivr.net/npm/leo-profanity@1.7.0/+esm';
+
+  leoProfanity.remove(['crap', 'damn', 'hell', 'suck', 'stupid', 'idiot']);
+  leoProfanity.add(['yourword1', 'yourword2']); // add your custom list here
+
+  function checkMessage(text) {
+    if (leoProfanity.check(text)) {
+      return { allowed: false, censored: leoProfanity.clean(text) };
+    }
+    return { allowed: true, censored: text };
+  }
+
+  const messagesEl = document.getElementById('messages');
+  const inputEl = document.getElementById('msgInput');
+  const sendBtn = document.getElementById('sendBtn');
+  const attachBtn = document.getElementById('attachBtn');
+  const fileInput = document.getElementById('fileInput');
+  const nameScreen = document.getElementById('nameScreen');
+  const bottomBar = document.getElementById('bottomBar');
+  const nameInput = document.getElementById('nameInput');
+  const nameBtn = document.getElementById('nameBtn');
+
+  let username = '';
+  let ws = null;
+
+  const MAX_FILE_BYTES = 5 * 1024 * 1024; // 5MB, keep WebSocket messages reasonable
+
+  function enterChat() {
+    const name = nameInput.value.trim();
+    if (!name) return;
+    username = checkMessage(name).allowed ? name : 'Guest';
+    nameScreen.classList.add('hidden');
+    bottomBar.classList.remove('hidden');
+    inputEl.focus();
+    connectWebSocket();
+  }
+
+  nameBtn.addEventListener('click', enterChat);
+  nameInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') enterChat();
+  });
+
+  let reconnectAttempts = 0;
+  const MAX_RECONNECT_ATTEMPTS = 3;
+  const RECONNECT_DELAY_MS = 3000;
+  let repeat = false;
+  let firstMessage = false;
+  function connectWebSocket() {
+    ws = new WebSocket('wss://chatworker.poopoo739738494.workers.dev');
+
+    ws.addEventListener('open', () => {
+      if (reconnectAttempts > 0) {
+        addSystemMessage('Reconnected.');
+        repeat = false;
+      } else {
+        addSystemMessage('Connected to chat.');
+      }
+      reconnectAttempts = 0;
+    });
+
+    ws.addEventListener('message', (event) => {
+      const data = JSON.parse(event.data);
+      if (data.typing !== undefined) {
+        handleTypingEvent(data);
+        return;
+      }
+      addMessage(data.name, data.message, data.attachment);
+    });
+
+    ws.addEventListener('close', () => {
+      if (repeat) return;
+      addSystemMessage('Disconnected, attempting to reconnect...')
+      attemptReconnect();
+    });
+
+    ws.addEventListener('error', () => {
+      if (repeat) return;
+      addSystemMessage('Connection error.');
+    });
+  }
+
+  function attemptReconnect() {
+    if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
+      addSystemMessage('Failed to reconnect, please refresh.');
+      return;
+    }
+    reconnectAttempts++;
+    addSystemMessage(`(${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})`);
+    repeat = true;
+    setTimeout(() => {
+      connectWebSocket();
+    }, RECONNECT_DELAY_MS);
+  }
+
+  function scrollToBottom() {
+    const bar = document.querySelector('.bottom-bar');
+    const barHeight = bar ? bar.offsetHeight : 0;
+    const lastMsg = messagesEl.lastElementChild;
+    if (!lastMsg) return;
+    const rect = lastMsg.getBoundingClientRect();
+    const desiredBottom = window.innerHeight - barHeight;
+    const delta = rect.bottom - desiredBottom;
+    window.scrollBy(0, delta);
+  }
+
+  // --- Typing indicator ---
+  const typingIndicatorEl = document.getElementById('typingIndicator');
+  const typingUsers = new Map(); // name -> timeout id (auto-clears if no update)
+
+  function handleTypingEvent(data) {
+    if (data.name === username) return; // never show yourself
+    if (typingUsers.has(data.name)) {
+      clearTimeout(typingUsers.get(data.name));
+    }
+    if (data.typing) {
+      const timeoutId = setTimeout(() => {
+        typingUsers.delete(data.name);
+        renderTypingIndicator();
+      }, 4000); // auto-clear if no follow-up event arrives
+      typingUsers.set(data.name, timeoutId);
+    } else {
+      typingUsers.delete(data.name);
+    }
+    renderTypingIndicator();
+  }
+
+  function renderTypingIndicator() {
+    const names = [...typingUsers.keys()];
+    if (names.length === 0) {
+      typingIndicatorEl.textContent = '';
+    } else if (names.length === 1) {
+      typingIndicatorEl.textContent = `${names[0]} is typing...`;
+    } else if (names.length === 2) {
+      typingIndicatorEl.textContent = `${names[0]}, ${names[1]} are typing...`;
+    } else {
+      typingIndicatorEl.textContent = `${names.slice(0, 2).join(', ')}, and ${names.length - 2} others are typing...`;
+    }
+  }
+
+  let isTyping = false;
+  let typingStopTimer = null;
+
+  function sendTyping(typing) {
+    if (!ws || ws.readyState !== WebSocket.OPEN) return;
+    ws.send(JSON.stringify({ name: username, typing }));
+  }
+
+  inputEl.addEventListener('input', () => {
+    if (inputEl.value.trim()) {
+      if (!isTyping) {
+        isTyping = true;
+        sendTyping(true);
+      }
+      clearTimeout(typingStopTimer);
+      typingStopTimer = setTimeout(() => {
+        isTyping = false;
+        sendTyping(false);
+      }, 2000);
+    } else if (isTyping) {
+      isTyping = false;
+      clearTimeout(typingStopTimer);
+      sendTyping(false);
+    }
+  });
+
+  function escapeHtml(str) {
+    return str
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  function resolveColor(spec) {
+    if (spec[0] === '#') {
+      return /^#[0-9a-fA-F]{3,8}$/.test(spec) ? spec : null;
+    }
+    return spec.toLowerCase();
+  }
+
+  function formatMessage(rawText) {
+    let text = escapeHtml(rawText);
+
+    // Pull out code blocks/inline code first so formatting inside them isn't touched
+    const codePlaceholders = [];
+    text = text.replace(/```([\s\S]*?)```/g, (match, code) => {
+      const token = `§§CB${codePlaceholders.length}§§`;
+      codePlaceholders.push(`<pre class="code-block"><code>${code}</code></pre>`);
+      return token;
+    });
+    text = text.replace(/`([^`\n]+?)`/g, (match, code) => {
+      const token = `§§CB${codePlaceholders.length}§§`;
+      codePlaceholders.push(`<code class="inline-code">${code}</code>`);
+      return token;
+    });
+
+    // Bold+italic, bold, italic, strikethrough
+    text = text.replace(/\*\*\*([^\*\n]+?)\*\*\*/g, '<strong><em>$1</em></strong>');
+    text = text.replace(/\*\*([^\*\n]+?)\*\*/g, '<strong>$1</strong>');
+    text = text.replace(/\*([^\*\n]+?)\*/g, '<em>$1</em>');
+    text = text.replace(/~~([^~\n]+?)~~/g, '<del>$1</del>');
+
+    // Color syntax: colorSpec[text], e.g. r[hello] or #00ff00[hello]
+    text = text.replace(/(#[0-9a-fA-F]{3,8}|[a-zA-Z]{1,25})\[([^\[\]]+?)\]/g, (match, spec, content) => {
+      const color = resolveColor(spec);
+      return color ? `<span style="color:${color}">${content}</span>` : match;
+    });
+
+    // Restore code blocks/inline code
+    text = text.replace(/§§CB(\d+)§§/g, (match, i) => codePlaceholders[Number(i)]);
+
+    return text;
+  }
+
+  function addSystemMessage(text) {
+    const div = document.createElement('div');
+    div.className = 'msg blocked';
+    div.textContent = text;
+    messagesEl.appendChild(div);
+    if (!firstMessage) {
+      scrollToBottom();
+      firstMessage = true;
+    }
+  }
+
+  function attachmentKind(mimeType) {
+    if (mimeType.startsWith('image/')) return 'image';
+    if (mimeType.startsWith('video/')) return 'video';
+    if (mimeType.startsWith('audio/')) return 'audio';
+    return 'file';
+  }
+
+  function addMessage(name, text, attachment) {
+    const div = document.createElement('div');
+    div.className = 'msg';
+
+    if (text) {
+      const textLine = document.createElement('div');
+      textLine.className = 'msg-text';
+      const sender = document.createElement('span');
+      sender.className = 'sender';
+      sender.textContent = name + ':';
+      textLine.appendChild(sender);
+      const bodySpan = document.createElement('span');
+      bodySpan.innerHTML = formatMessage(text);
+      textLine.appendChild(bodySpan);
+      div.appendChild(textLine);
+    } else {
+      const sender = document.createElement('div');
+      sender.className = 'sender';
+      sender.textContent = name;
+      div.appendChild(sender);
+    }
+
+    if (attachment) {
+      div.appendChild(buildAttachmentEl(attachment));
+    }
+
+    messagesEl.appendChild(div);
+    scrollToBottom();
+  }
+
+  function buildAttachmentEl(attachment) {
+    const { kind, dataUrl, filename } = attachment;
+
+    if (kind === 'image') {
+      const img = document.createElement('img');
+      img.className = 'attachment';
+      img.src = dataUrl;
+      img.alt = filename || 'image';
+      return img;
+    }
+
+    if (kind === 'video') {
+      const video = document.createElement('video');
+      video.className = 'attachment';
+      video.src = dataUrl;
+      video.controls = true;
+      return video;
+    }
+
+    if (kind === 'audio') {
+      const audio = document.createElement('audio');
+      audio.className = 'attachment';
+      audio.src = dataUrl;
+      audio.controls = true;
+      return audio;
+    }
+
+    // generic file
+    const wrap = document.createElement('div');
+    wrap.className = 'file-attachment';
+
+    const nameSpan = document.createElement('span');
+    nameSpan.className = 'file-name';
+    nameSpan.textContent = filename || 'file';
+    wrap.appendChild(nameSpan);
+
+    const downloadLink = document.createElement('a');
+    downloadLink.className = 'download-btn';
+    downloadLink.href = dataUrl;
+    downloadLink.download = filename || 'download';
+    downloadLink.textContent = 'Download';
+    wrap.appendChild(downloadLink);
+
+    return wrap;
+  }
+
+  function sendMessage() {
+    const text = inputEl.value.trim();
+    if (!text || !ws || ws.readyState !== WebSocket.OPEN) return;
+    if (isTyping) {
+      isTyping = false;
+      clearTimeout(typingStopTimer);
+      sendTyping(false);
+    }
+    ws.send(JSON.stringify({ name: username, message: text }));
+    inputEl.value = '';
+  }
+
+  sendBtn.addEventListener('click', sendMessage);
+  inputEl.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') sendMessage();
+  });
+
+  attachBtn.addEventListener('click', () => fileInput.click());
+
+  fileInput.addEventListener('change', () => {
+    const file = fileInput.files[0];
+    fileInput.value = ''; // reset so picking the same file again still fires 'change'
+    if (!file) return;
+
+    if (file.size > MAX_FILE_BYTES) {
+      addSystemMessage(`"${file.name}" is too large to send (max 5MB).`);
+      return;
+    }
+
+    if (!ws || ws.readyState !== WebSocket.OPEN) {
+      addSystemMessage('Not connected — cannot send file.');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const attachment = {
+        kind: attachmentKind(file.type),
+        dataUrl: reader.result,
+        filename: file.name
+      };
+      const caption = inputEl.value.trim();
+      ws.send(JSON.stringify({ name: username, message: caption, attachment }));
+      inputEl.value = '';
+    };
+    reader.onerror = () => {
+      addSystemMessage(`Could not read "${file.name}".`);
+    };
+    reader.readAsDataURL(file);
+  });
+  </script>
+  
