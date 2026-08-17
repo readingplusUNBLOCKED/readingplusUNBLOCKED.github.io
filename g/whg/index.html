@@ -24,7 +24,7 @@
             let player = ruffle.createPlayer();
             let container = document.getElementById("container");
             container.appendChild(player);
-            player.load("https://oldflashgames.github.io/games5/worlds-hardest-game.swf");
+            player.load("https://oldflashgames.github.io/games5/worlds-hardest-game.swf?a=readingplus");
             var flashX = 800;
             var flashY = 600;
             var gameRatio = ((flashX / flashY).toFixed(4)) * 100;
@@ -33,6 +33,6 @@
             document.getElementsByTagName("ruffle-player")[0].style.boxShadow = "0 0 5vmin 1vmin black";
         });       
     </script>
-    <script src="https://unpkg.com/@ruffle-rs/ruffle"></script>
+    <script src="https://unpkg.com/@ruffle-rs/ruffle?a=readingplus"></script>
 </body>
 </html>
